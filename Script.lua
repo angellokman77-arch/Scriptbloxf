@@ -1,7 +1,15 @@
 --====================================
 -- BLOX FRUITS – SEA 1 AUTO FARM WITH QUEUE_ON_TELEPORT
--- Host this script externally (GitHub, Pastebin)
+-- Fully automated: Pirate click, fruit scan, pick/store, server hop
 --====================================
+
+--=============================
+-- QUEUE SCRIPT ON SERVER HOP
+--=============================
+if queue_on_teleport then
+    queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script"))
+    print("🔁 Script queued for execution after server hop!")
+end
 
 -- SERVICES
 local Players = game:GetService("Players")
@@ -19,7 +27,7 @@ local FRUIT_RESPAWN_TIME = 600 -- 10 minutes
 local SCAN_DELAY = 1 -- seconds between fruit scans
 
 --====================================
--- SERVER HOP
+-- SERVER HOP UTILITY
 --====================================
 local function shuffle(t)
     for i = #t, 2, -1 do
@@ -80,10 +88,14 @@ local function autoPickPirate()
         local pirateButton = teamFrame:FindFirstChild("Pirate")
         if pirateButton then
             local timer = 0
-            while pirateButton.Visible and timer < 10 do
-                pirateButton:Activate()
-                print("🏴‍☠️ Pirate team selected!")
-                break
+            while timer < 10 do
+                if pirateButton.Visible then
+                    pirateButton:Activate()
+                    print("🏴‍☠️ Pirate team selected!")
+                    break
+                end
+                task.wait(0.5)
+                timer = timer + 0.5
             end
         end
     end)
@@ -147,7 +159,7 @@ local function pickAndStoreFruit(root, fruit)
 end
 
 --====================================
--- MAIN LOOP
+-- MAIN AUTOMATION LOOP
 --====================================
 local function startAutomation()
     autoPickPirate()
