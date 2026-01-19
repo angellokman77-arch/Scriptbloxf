@@ -1,14 +1,15 @@
 --====================================
--- BLOX FRUITS – SEA 1 AUTO FARM WITH FIXES
--- Fully automated: Pirate click, fruit scan, pick/store, server hop
--- Includes queue_on_teleport for auto re-execution
+-- BLOX FRUITS – SEA 1 FULL AUTO FARM
+-- Self-contained script: auto Pirate, fruit scan, pick/store, server hop
+-- Includes auto re-execute after teleport
 --====================================
 
 --=============================
--- QUEUE SCRIPT ON SERVER HOP
+-- AUTO RE-EXECUTE AFTER SERVER HOP
 --=============================
+local SCRIPT_URL = "https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"
 if queue_on_teleport then
-    queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"))
+    queue_on_teleport(SCRIPT_URL)
     print("🔁 Script queued for execution after server hop!")
 end
 
@@ -28,7 +29,7 @@ local FRUIT_RESPAWN_TIME = 600 -- 10 minutes
 local SCAN_DELAY = 1 -- seconds between fruit scans
 
 --====================================
--- SERVER HOP UTILITY
+-- SERVER HOP FUNCTIONS
 --====================================
 local function shuffle(t)
     for i = #t, 2, -1 do
@@ -196,7 +197,7 @@ local function startAutomation()
 end
 
 --====================================
--- EXECUTE IMMEDIATELY & ON CHARACTER SPAWN
+-- EXECUTE AUTOMATION IMMEDIATELY & ON CHARACTER SPAWN
 --====================================
 task.spawn(startAutomation)
 player.CharacterAdded:Connect(function()
