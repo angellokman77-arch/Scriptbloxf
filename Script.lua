@@ -1,13 +1,14 @@
 --====================================
--- BLOX FRUITS – SEA 1 AUTO FARM WITH QUEUE_ON_TELEPORT
+-- BLOX FRUITS – SEA 1 AUTO FARM WITH FIXES
 -- Fully automated: Pirate click, fruit scan, pick/store, server hop
+-- Includes queue_on_teleport for auto re-execution
 --====================================
 
 --=============================
 -- QUEUE SCRIPT ON SERVER HOP
 --=============================
 if queue_on_teleport then
-    queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script"))
+    queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"))
     print("🔁 Script queued for execution after server hop!")
 end
 
@@ -81,24 +82,28 @@ end
 -- AUTO PIRATE TEAM PICK (RELIABLE LOOP)
 --====================================
 local function autoPickPirate()
-    local success, _ = pcall(function()
-        local gui = player:WaitForChild("PlayerGui")
-        local mainGui = gui:WaitForChild("MainGui", 15)
-        local teamFrame = mainGui:WaitForChild("TeamSelectionFrame", 15)
-        local pirateButton = teamFrame:FindFirstChild("Pirate")
-        if pirateButton then
-            local timer = 0
-            while timer < 10 do
-                if pirateButton.Visible then
-                    pirateButton:Activate()
-                    print("🏴‍☠️ Pirate team selected!")
-                    break
+    local startTime = tick()
+    while tick() - startTime < 12 do -- wait up to 12s
+        local success, gui = pcall(function()
+            return player:FindFirstChild("PlayerGui")
+        end)
+        if success and gui then
+            local mainGui = gui:FindFirstChild("MainGui")
+            if mainGui then
+                local teamFrame = mainGui:FindFirstChild("TeamSelectionFrame")
+                if teamFrame then
+                    local pirateBtn = teamFrame:FindFirstChild("Pirate")
+                    if pirateBtn and pirateBtn:IsA("TextButton") and pirateBtn.Visible then
+                        pirateBtn:Activate()
+                        print("🏴‍☠️ Pirate team selected!")
+                        return
+                    end
                 end
-                task.wait(0.5)
-                timer = timer + 0.5
             end
         end
-    end)
+        task.wait(0.3)
+    end
+    warn("⚠️ Pirate button not found within timeout.")
 end
 
 --====================================
