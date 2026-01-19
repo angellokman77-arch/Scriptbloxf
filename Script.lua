@@ -1,26 +1,32 @@
 --====================================
 -- BLOX FRUITS – SEA 1 FULL AUTO FARM
 -- Self-contained script: auto Pirate, fruit scan, pick/store, server hop
--- Includes auto re-execute after teleport
+-- Queues itself automatically on server hop (Option 1)
 --====================================
 
 --=============================
 -- AUTO RE-EXECUTE AFTER SERVER HOP
 --=============================
 local SCRIPT_URL = "https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"
+
 if queue_on_teleport then
     queue_on_teleport(SCRIPT_URL)
     print("🔁 Script queued for execution after server hop!")
 end
 
+--====================================
 -- SERVICES
+--====================================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
+--====================================
 -- SETTINGS
+--====================================
 local PLACE_ID = 2753915549
 local TWEEN_SPEED = 120
 local SERVER_API = "https://games.roblox.com/v1/games/"..PLACE_ID.."/servers/Public?sortOrder=Asc&limit=100"
@@ -29,7 +35,7 @@ local FRUIT_RESPAWN_TIME = 600 -- 10 minutes
 local SCAN_DELAY = 1 -- seconds between fruit scans
 
 --====================================
--- SERVER HOP FUNCTIONS
+-- UTILITY FUNCTIONS
 --====================================
 local function shuffle(t)
     for i = #t, 2, -1 do
@@ -38,6 +44,9 @@ local function shuffle(t)
     end
 end
 
+--====================================
+-- SERVER HOP
+--====================================
 local function serverHop()
     local success, serversData = pcall(function()
         return HttpService:JSONDecode(game:HttpGet(SERVER_API))
@@ -71,7 +80,7 @@ local function serverHop()
 end
 
 --====================================
--- CHARACTER / ROOT
+-- WAIT FOR CHARACTER
 --====================================
 local function waitForCharacter()
     local character = player.Character or player.CharacterAdded:Wait()
@@ -80,11 +89,11 @@ local function waitForCharacter()
 end
 
 --====================================
--- AUTO PIRATE TEAM PICK (RELIABLE LOOP)
+-- AUTO PIRATE TEAM PICK (RELIABLE)
 --====================================
 local function autoPickPirate()
     local startTime = tick()
-    while tick() - startTime < 12 do -- wait up to 12s
+    while tick() - startTime < 12 do -- wait up to 12s for GUI
         local success, gui = pcall(function()
             return player:FindFirstChild("PlayerGui")
         end)
@@ -97,6 +106,7 @@ local function autoPickPirate()
                     if pirateBtn and pirateBtn:IsA("TextButton") and pirateBtn.Visible then
                         pirateBtn:Activate()
                         print("🏴‍☠️ Pirate team selected!")
+                        task.wait(1) -- ensure server registers
                         return
                     end
                 end
@@ -124,7 +134,7 @@ local function findAllFruits(root)
 end
 
 --====================================
--- TWEEN TO POSITION
+-- TWEEN FUNCTION
 --====================================
 local function tweenTo(root, pos)
     if not root or not pos then return end
@@ -143,6 +153,7 @@ local function pickAndStoreFruit(root, fruit)
     local Backpack = player:WaitForChild("Backpack")
     local fruitName = fruit.Name
 
+    -- Already have the fruit?
     for _, item in pairs(Backpack:GetChildren()) do
         if item.Name == fruitName then
             print("❌ Already have this fruit.")
