@@ -1,6 +1,7 @@
 --====================================
--- BLOX FRUITS – FULL AUTO FARM (Reliable Pirate Click + Queue)
--- Put entire script in GitHub RAW
+-- BLOX FRUITS – SEA 1 FULL AUTO FARM (Reliable Pirate + Auto-Reexec)
+-- Self-contained: auto Pirate, fruit scan, pick/store, server hop
+-- Includes auto re-execute after teleport
 --====================================
 
 --=============================
@@ -71,45 +72,37 @@ local function serverHop()
 end
 
 --====================================
--- RELIABLE PIRATE CLICK
+-- RELIABLE PIRATE CLICK (Recursive Search + VirtualUser)
 --====================================
 local function autoPickPirate()
-    -- wait up to 12 seconds for the GUI
-    local timeout = tick() + 12
+    local timeout = tick() + 20 -- wait up to 20s
     while tick() < timeout do
         local gui = player:FindFirstChild("PlayerGui")
         if gui then
-            local main = gui:FindFirstChild("Main")
-            if main then
-                local choose = main:FindFirstChild("ChooseTeam")
-                if choose then
-                    local container = choose:FindFirstChild("Container")
-                    if container then
-                        local pirates = container:FindFirstChild("Pirates")
-                        if pirates then
-                            local frame = pirates:FindFirstChild("Frame")
-                            if frame then
-                                local viewport = frame:FindFirstChild("ViewportFrame")
-                                if viewport then
-                                    local btn = viewport:FindFirstChildWhichIsA("TextButton")
-                                    if btn then
-                                        -- simulate real click
-                                        VirtualUser:Button1Down(Vector2.new(0,0))
-                                        task.wait(0.1)
-                                        VirtualUser:Button1Up(Vector2.new(0,0))
-                                        print("🏴‍☠️ Pirate clicked!")
-                                        return
-                                    end
-                                end
-                            end
-                        end
+            local function searchForPirate(obj)
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("TextButton") and child.Name:lower():find("pirate") then
+                        return child
+                    else
+                        local found = searchForPirate(child)
+                        if found then return found end
                     end
                 end
+            end
+            local btn = searchForPirate(gui)
+            if btn then
+                -- simulate real click
+                VirtualUser:Button1Down(Vector2.new(0,0))
+                task.wait(0.1)
+                VirtualUser:Button1Up(Vector2.new(0,0))
+                print("🏴‍☠️ Pirate button clicked!")
+                return true
             end
         end
         task.wait(0.2)
     end
-    warn("⚠️ Pirate button not found.")
+    warn("⚠️ Pirate button not found after 20s.")
+    return false
 end
 
 --====================================
@@ -122,11 +115,11 @@ local function waitForCharacter()
 end
 
 --====================================
--- FRUIT FIND
+-- FRUIT DETECTION
 --====================================
 local function findAllFruits(root)
     local fruits = {}
-    for _,v in ipairs(workspace:GetDescendants()) do
+    for _, v in ipairs(workspace:GetDescendants()) do
         if v:IsA("Tool") and v:FindFirstChild("Handle") then
             table.insert(fruits, v)
         end
@@ -155,7 +148,7 @@ local function pickAndStoreFruit(root, fruit)
     if not root or not fruit or not fruit:FindFirstChild("Handle") then return false end
     local bp = player:WaitForChild("Backpack")
     local name = fruit.Name
-    for _,item in pairs(bp:GetChildren()) do
+    for _, item in pairs(bp:GetChildren()) do
         if item.Name == name then
             return false
         end
@@ -169,7 +162,7 @@ local function pickAndStoreFruit(root, fruit)
 end
 
 --====================================
--- MAIN LOOP
+-- MAIN AUTOMATION LOOP
 --====================================
 local function startAutomation()
     autoPickPirate()
@@ -179,12 +172,13 @@ local function startAutomation()
     while true do
         local fruits = findAllFruits(root)
         if #fruits == 0 then
+            print("❌ No fruits left, server hopping...")
             serverHop()
             return
         end
 
         local pickedAny = false
-        for _,f in ipairs(fruits) do
+        for _, f in ipairs(fruits) do
             if pickAndStoreFruit(root, f) then
                 pickedAny = true
             end
@@ -192,6 +186,7 @@ local function startAutomation()
         end
 
         if not pickedAny then
+            print("Inventory may be full or duplicate fruit, server hopping...")
             serverHop()
             return
         end
@@ -200,6 +195,10 @@ local function startAutomation()
     end
 end
 
--- run immediately and on respawn
+--====================================
+-- EXECUTE IMMEDIATELY AND ON RESPAWN
+--====================================
 task.spawn(startAutomation)
-player.CharacterAdded:Connect(function() task.spawn(startAutomation) end)
+player.CharacterAdded:Connect(function()
+    task.spawn(startAutomation)
+end)
