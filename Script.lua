@@ -1,6 +1,6 @@
 --====================================
--- BLOX FRUITS – SEA 1 AUTO FARM (JJsploit compatible)
--- Fully automatic: select Pirate, pick/store fruits, server hop
+-- BLOX FRUITS – SEA 1 FULL AUTO FARM (JJsploit)
+-- Auto Pirate click (VirtualUser), fruit pick/store, server hop
 -- Self-contained with queue_on_teleport
 --====================================
 
@@ -20,6 +20,8 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 
 --====================================
@@ -29,8 +31,8 @@ local PLACE_ID = 2753915549
 local TWEEN_SPEED = 120
 local SERVER_API = "https://games.roblox.com/v1/games/"..PLACE_ID.."/servers/Public?sortOrder=Asc&limit=100"
 local visitedServers = {}
-local FRUIT_RESPAWN_TIME = 600 -- 10 minutes
-local SCAN_DELAY = 1 -- seconds between fruit scans
+local FRUIT_RESPAWN_TIME = 600 -- 10 min
+local SCAN_DELAY = 1
 
 --====================================
 -- SERVER HOP
@@ -76,18 +78,24 @@ local function waitForCharacter()
 end
 
 --====================================
--- RELIABLE AUTO PIRATE TEAM PICK (JJsploit)
+-- RELIABLE AUTO PIRATE CLICK (VIRTUALUSER)
 --====================================
 local function autoPickPirate()
-    -- Blox Fruits uses a RemoteEvent "ChooseTeam" under ReplicatedStorage
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local chooseTeamEvent = ReplicatedStorage:WaitForChild("ChooseTeam", 15)
-    if chooseTeamEvent then
-        chooseTeamEvent:FireServer("Pirate")
-        print("🏴‍☠️ Pirate team selected (via RemoteEvent)!")
-    else
-        warn("⚠️ Could not find ChooseTeam RemoteEvent!")
-    end
+    local gui = player:WaitForChild("PlayerGui", 10)
+    local main = gui:FindFirstChild("Main")
+    if not main then return end
+    local choose = main:WaitForChild("ChooseTeam", 15)
+    if not choose then return end
+
+    repeat task.wait() until choose.Visible
+
+    print("🖱️ Clicking Pirate button...")
+    -- Move mouse and click using VirtualUser
+    local pirateButtonPos = Vector2.new(400, 300) -- adjust based on your screen, usually left-middle
+    VirtualUser:Button1Down(Vector2.new(pirateButtonPos.X, pirateButtonPos.Y))
+    task.wait(0.1)
+    VirtualUser:Button1Up(Vector2.new(pirateButtonPos.X, pirateButtonPos.Y))
+    print("🏴‍☠️ Pirate team selected via VirtualUser!")
 end
 
 --====================================
