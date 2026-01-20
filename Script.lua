@@ -9,7 +9,7 @@
 local SCRIPT_URL = "https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"
 
 if queue_on_teleport then
-    queue_on_teleport("loadstring(game:HttpGet('"https://raw.githubusercontent.com/angellokman77-arch/Scriptbloxf/refs/heads/main/Script.lua"'))()")
+    queue_on_teleport("loadstring(game:HttpGet('"..SCRIPT_URL.."'))()")
     print("🔁 Script queued for next server")
 end
 
