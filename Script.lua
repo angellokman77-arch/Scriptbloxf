@@ -1,7 +1,6 @@
 --====================================
--- BLOX FRUITS – SEA 1 FULL AUTO FARM (Reliable Pirate + Auto-Reexec)
--- Self-contained: auto Pirate, fruit scan, pick/store, server hop
--- Includes auto re-execute after teleport
+-- BLOX FRUITS – SEA 1 AUTO FARM (Reliable Team Tap & Auto Hop)
+-- Insert this entire script as Script.lua on GitHub RAW
 --====================================
 
 --=============================
@@ -20,7 +19,6 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 
 --====================================
@@ -34,35 +32,31 @@ local FRUIT_RESPAWN_TIME = 600
 local SCAN_DELAY = 1
 
 --====================================
--- UTILITY
+-- SERVER HOP
 --====================================
 local function shuffle(t)
     for i = #t, 2, -1 do
-        local j = math.random(1,i)
+        local j = math.random(1, i)
         t[i], t[j] = t[j], t[i]
     end
 end
 
---====================================
--- SERVER HOP
---====================================
 local function serverHop()
-    local success, serversData = pcall(function()
+    local success, data = pcall(function()
         return HttpService:JSONDecode(game:HttpGet(SERVER_API))
     end)
-    if not success or not serversData or not serversData.data then
+    if not success or not data or not data.data then
         task.wait(5)
         return serverHop()
     end
-
-    local servers = serversData.data
+    local servers = data.data
     shuffle(servers)
     local now = os.time()
-    for _, server in pairs(servers) do
-        if not visitedServers[server.id] or now - visitedServers[server.id] > FRUIT_RESPAWN_TIME then
-            if server.playing < server.maxPlayers then
-                visitedServers[server.id] = now
-                TeleportService:TeleportToPlaceInstance(PLACE_ID, server.id, player)
+    for _, s in ipairs(servers) do
+        if (not visitedServers[s.id]) or (now - visitedServers[s.id] > FRUIT_RESPAWN_TIME) then
+            if s.playing < s.maxPlayers then
+                visitedServers[s.id] = now
+                TeleportService:TeleportToPlaceInstance(PLACE_ID, s.id, player)
                 return
             end
         end
@@ -72,41 +66,46 @@ local function serverHop()
 end
 
 --====================================
--- RELIABLE PIRATE CLICK (Recursive Search + VirtualUser)
+-- RELIABLE AUTO PIRATE TEAM CLICK
 --====================================
 local function autoPickPirate()
-    local timeout = tick() + 20 -- wait up to 20s
-    while tick() < timeout do
-        local gui = player:FindFirstChild("PlayerGui")
-        if gui then
-            local function searchForPirate(obj)
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("TextButton") and child.Name:lower():find("pirate") then
-                        return child
-                    else
-                        local found = searchForPirate(child)
-                        if found then return found end
-                    end
+    local gui = player:WaitForChild("PlayerGui", 10)
+    if not gui then return end
+
+    local main = gui:FindFirstChild("Main")
+    if not main then return end
+
+    local choose = main:FindFirstChild("ChooseTeam")
+    if not choose then return end
+
+    -- Wait until visible
+    repeat task.wait() until choose.Visible
+
+    local container = choose:FindFirstChild("Container")
+    if not container then return end
+
+    local piratesFrame = container:FindFirstChild("Pirates")
+    if not piratesFrame then return end
+
+    local viewport = piratesFrame:FindFirstChild("Frame")
+    if viewport then
+        local btn = viewport:FindFirstChild("ViewportFrame")
+        if btn then
+            local textBtn = btn:FindFirstChildWhichIsA("TextButton")
+            if textBtn then
+                -- invoke all activated connections
+                for _, conn in pairs(getconnections(textBtn.Activated)) do
+                    pcall(conn.Function)
                 end
-            end
-            local btn = searchForPirate(gui)
-            if btn then
-                -- simulate real click
-                VirtualUser:Button1Down(Vector2.new(0,0))
-                task.wait(0.1)
-                VirtualUser:Button1Up(Vector2.new(0,0))
-                print("🏴‍☠️ Pirate button clicked!")
-                return true
+                print("🏴‍☠️ Pirate team chosen!")
+                return
             end
         end
-        task.wait(0.2)
     end
-    warn("⚠️ Pirate button not found after 20s.")
-    return false
 end
 
 --====================================
--- WAIT FOR CHARACTER
+-- CHARACTER / ROOT
 --====================================
 local function waitForCharacter()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -124,32 +123,30 @@ local function findAllFruits(root)
             table.insert(fruits, v)
         end
     end
-    table.sort(fruits, function(a,b)
+    table.sort(fruits, function(a, b)
         return (a.Handle.Position - root.Position).Magnitude < (b.Handle.Position - root.Position).Magnitude
     end)
     return fruits
 end
 
 --====================================
--- TWEEN TO FRUIT
+-- MOVE TWEEN
 --====================================
 local function tweenTo(root, pos)
     local dist = (root.Position - pos).Magnitude
-    local t = dist / TWEEN_SPEED
-    local tw = TweenService:Create(root, TweenInfo.new(t, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos + Vector3.new(0,3,0))})
+    local time = dist / TWEEN_SPEED
+    local tw = TweenService:Create(root, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))})
     tw:Play()
     tw.Completed:Wait()
 end
 
 --====================================
--- PICK FRUIT
+-- PICK & STORE FRUIT
 --====================================
 local function pickAndStoreFruit(root, fruit)
-    if not root or not fruit or not fruit:FindFirstChild("Handle") then return false end
     local bp = player:WaitForChild("Backpack")
-    local name = fruit.Name
-    for _, item in pairs(bp:GetChildren()) do
-        if item.Name == name then
+    for _, item in ipairs(bp:GetChildren()) do
+        if item.Name == fruit.Name then
             return false
         end
     end
@@ -157,22 +154,20 @@ local function pickAndStoreFruit(root, fruit)
     firetouchinterest(root, fruit.Handle, 0)
     task.wait(0.1)
     firetouchinterest(root, fruit.Handle, 1)
-    print("🍏 picked", name)
     return true
 end
 
 --====================================
--- MAIN AUTOMATION LOOP
+-- MAIN AUTOMATION
 --====================================
 local function startAutomation()
     autoPickPirate()
     local _, root = waitForCharacter()
     task.wait(1.5)
-
     while true do
         local fruits = findAllFruits(root)
         if #fruits == 0 then
-            print("❌ No fruits left, server hopping...")
+            print("❌ No fruits found — hopping...")
             serverHop()
             return
         end
@@ -186,17 +181,16 @@ local function startAutomation()
         end
 
         if not pickedAny then
-            print("Inventory may be full or duplicate fruit, server hopping...")
+            print("Inventory full or same fruits — hopping...")
             serverHop()
             return
         end
-
         task.wait(0.5)
     end
 end
 
 --====================================
--- EXECUTE IMMEDIATELY AND ON RESPAWN
+-- EXECUTE AUTOMATION
 --====================================
 task.spawn(startAutomation)
 player.CharacterAdded:Connect(function()
