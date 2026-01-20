@@ -1,6 +1,7 @@
 --====================================
--- BLOX FRUITS – SEA 1 AUTO FARM (Reliable Team Tap & Auto Hop)
--- Insert this entire script as Script.lua on GitHub RAW
+-- BLOX FRUITS – SEA 1 AUTO FARM (JJsploit compatible)
+-- Fully automatic: select Pirate, pick/store fruits, server hop
+-- Self-contained with queue_on_teleport
 --====================================
 
 --=============================
@@ -28,8 +29,8 @@ local PLACE_ID = 2753915549
 local TWEEN_SPEED = 120
 local SERVER_API = "https://games.roblox.com/v1/games/"..PLACE_ID.."/servers/Public?sortOrder=Asc&limit=100"
 local visitedServers = {}
-local FRUIT_RESPAWN_TIME = 600
-local SCAN_DELAY = 1
+local FRUIT_RESPAWN_TIME = 600 -- 10 minutes
+local SCAN_DELAY = 1 -- seconds between fruit scans
 
 --====================================
 -- SERVER HOP
@@ -66,51 +67,27 @@ local function serverHop()
 end
 
 --====================================
--- RELIABLE AUTO PIRATE TEAM CLICK
---====================================
-local function autoPickPirate()
-    local gui = player:WaitForChild("PlayerGui", 10)
-    if not gui then return end
-
-    local main = gui:FindFirstChild("Main")
-    if not main then return end
-
-    local choose = main:FindFirstChild("ChooseTeam")
-    if not choose then return end
-
-    -- Wait until visible
-    repeat task.wait() until choose.Visible
-
-    local container = choose:FindFirstChild("Container")
-    if not container then return end
-
-    local piratesFrame = container:FindFirstChild("Pirates")
-    if not piratesFrame then return end
-
-    local viewport = piratesFrame:FindFirstChild("Frame")
-    if viewport then
-        local btn = viewport:FindFirstChild("ViewportFrame")
-        if btn then
-            local textBtn = btn:FindFirstChildWhichIsA("TextButton")
-            if textBtn then
-                -- invoke all activated connections
-                for _, conn in pairs(getconnections(textBtn.Activated)) do
-                    pcall(conn.Function)
-                end
-                print("🏴‍☠️ Pirate team chosen!")
-                return
-            end
-        end
-    end
-end
-
---====================================
 -- CHARACTER / ROOT
 --====================================
 local function waitForCharacter()
     local char = player.Character or player.CharacterAdded:Wait()
     local root = char:WaitForChild("HumanoidRootPart")
     return char, root
+end
+
+--====================================
+-- RELIABLE AUTO PIRATE TEAM PICK (JJsploit)
+--====================================
+local function autoPickPirate()
+    -- Blox Fruits uses a RemoteEvent "ChooseTeam" under ReplicatedStorage
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local chooseTeamEvent = ReplicatedStorage:WaitForChild("ChooseTeam", 15)
+    if chooseTeamEvent then
+        chooseTeamEvent:FireServer("Pirate")
+        print("🏴‍☠️ Pirate team selected (via RemoteEvent)!")
+    else
+        warn("⚠️ Could not find ChooseTeam RemoteEvent!")
+    end
 end
 
 --====================================
@@ -130,7 +107,7 @@ local function findAllFruits(root)
 end
 
 --====================================
--- MOVE TWEEN
+-- TWEEN TO POSITION
 --====================================
 local function tweenTo(root, pos)
     local dist = (root.Position - pos).Magnitude
@@ -154,11 +131,12 @@ local function pickAndStoreFruit(root, fruit)
     firetouchinterest(root, fruit.Handle, 0)
     task.wait(0.1)
     firetouchinterest(root, fruit.Handle, 1)
+    print("✅ Picked fruit:", fruit.Name)
     return true
 end
 
 --====================================
--- MAIN AUTOMATION
+-- MAIN AUTOMATION LOOP
 --====================================
 local function startAutomation()
     autoPickPirate()
@@ -181,7 +159,7 @@ local function startAutomation()
         end
 
         if not pickedAny then
-            print("Inventory full or same fruits — hopping...")
+            print("Inventory full or duplicate fruits — hopping...")
             serverHop()
             return
         end
